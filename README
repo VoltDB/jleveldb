@@ -1,0 +1,51 @@
+jleveldb
+
+A bare bones JNI wrapper for the LevelDB project (http://code.google.com/p/leveldb/)
+
+This project wraps the C-interface to LevelDB with JNI code, exposing it to Java. It is
+missing about 3 functions that have callbacks or other weirdness I haven't gotten to yet.
+
+It comes with pre-built LevelDB libraries for OSX 10.6+ and Linux 2.6 (both 64-bit). It
+comes with a makefile that should product a JNI library and a jarfile for those platforms.
+It also comes with inadequate, but easily expanded, test-coverage.
+
+Note that the libleveldb-linux.a library was built with the -fPIC flag.
+
+It shouldn't be too much work to update the makefile to build for other platforms or
+architectures.
+
+The following make targets are useful:
+make clean
+make
+make test
+
+It uses Java longs to represent pointers in native code. This is a hack that seems to work
+reasonably well. Be aware that if you pass the wrong kind of structure for a given
+parameter, your process will likely crash.
+
+I plan to build a java layer on top of this that more closely mirrors the native LevelDB
+API when I get a chance.
+
+Here is some sample code:
+
+===========
+
+NativeInterface ni = new NativeInterface();
+
+long options = ni.leveldb_options_create();
+ni.leveldb_options_set_create_if_missing(options, true);
+long writeoptions = ni.leveldb_writeoptions_create();
+long readoptions = ni.leveldb_readoptions_create();
+
+long db = ni.leveldb_open(options, "testfile.leveldb");
+ni.leveldb_put(db, writeoptions, "key".getBytes(), "value".getBytes());
+byte[] value = ni.leveldb_get(db, readoptions, "key".getBytes());
+assertTrue(Arrays.equals("value".getBytes(), value));
+ni.leveldb_close(db);
+ni.leveldb_destroy_db(options, "testfile.leveldb");
+
+ni.leveldb_options_destroy(options);
+ni.leveldb_readoptions_destroy(readoptions);
+ni.leveldb_writeoptions_destroy(writeoptions);
+
+===========
