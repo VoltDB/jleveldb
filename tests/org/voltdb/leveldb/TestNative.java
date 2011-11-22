@@ -48,6 +48,59 @@ public class TestNative extends TestCase {
         assertTrue(Arrays.equals("value".getBytes(), value));
         ni.leveldb_close(db);
         ni.leveldb_destroy_db(options, "testfile.leveldb");
+
+        ni.leveldb_options_destroy(options);
+        ni.leveldb_readoptions_destroy(readoptions);
+        ni.leveldb_writeoptions_destroy(writeoptions);
+    }
+
+    public void testInsertsUpdatesDeletesAndIters() {
+        NativeInterface ni = new NativeInterface();
+
+        long options = ni.leveldb_options_create();
+        ni.leveldb_options_set_create_if_missing(options, true);
+        long writeoptions = ni.leveldb_writeoptions_create();
+        long readoptions = ni.leveldb_readoptions_create();
+
+        long db = ni.leveldb_open(options, "testfile.leveldb");
+
+        for (int i = 0; i < 1000; i++) {
+            byte[] key = String.valueOf(i).getBytes();
+            byte[] value = ("the number " + String.valueOf(i)).getBytes();
+            ni.leveldb_put(db, writeoptions, key, value);
+        }
+
+        for (int i = 1; i < 1000; i += 2) {
+            byte[] key = String.valueOf(i).getBytes();
+            byte[] value = ni.leveldb_get(db, readoptions, key);
+            String valueStr = new String(value);
+            value = (valueStr + " odd").getBytes();
+            ni.leveldb_put(db, writeoptions, key, value);
+        }
+
+        for (int i = 0; i < 1000; i += 3) {
+            byte[] key = String.valueOf(i).getBytes();
+            boolean odd = (i % 2) == 1;
+            String value = new String(ni.leveldb_get(db, readoptions, key));
+            assert (odd == value.contains("odd"));
+        }
+
+        long iter = ni.leveldb_create_iterator(db, readoptions);
+        for (; ni.leveldb_iter_valid(iter); ni.leveldb_iter_next(iter)) {
+            String key = new String(ni.leveldb_iter_key(iter));
+            int keyVal = Integer.parseInt(key);
+            boolean odd = keyVal % 2 == 0;
+            String value = new String(ni.leveldb_iter_value(iter));
+            assert (odd == value.contains("odd"));
+        }
+        ni.leveldb_iter_destroy(iter);
+
+        ni.leveldb_close(db);
+        ni.leveldb_destroy_db(options, "testfile.leveldb");
+
+        ni.leveldb_options_destroy(options);
+        ni.leveldb_readoptions_destroy(readoptions);
+        ni.leveldb_writeoptions_destroy(writeoptions);
     }
 
 }
