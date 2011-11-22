@@ -47,7 +47,7 @@ endif
 ifeq ($(PLATFORM),Linux)
 	$(CCACHE) g++ \
 	-g3 -O3 -mmmx -msse -msse2 -msse3 -fPIC \
-	-DLINUX \
+	-DLINUX -I. \
 	-c -o $@ $<
 endif
 	@echo 'Finished building: $<'
@@ -77,7 +77,7 @@ ifeq ($(PLATFORM),Linux)
 	-L/opt/jdk1.6.0_18/jre/../lib/amd64 \
 	-L/usr/java/packages/lib/amd64 \
 	-L/usr/lib64 -L/lib64 -L/lib -ljava -ljvm -lverify -lpthread \
-	$(USER_OBJS) $^ \
+	$^ $(USER_OBJS) \
 	-o $@
 endif
 	@echo 'Finished building target: $@'
