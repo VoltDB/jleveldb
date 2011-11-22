@@ -28,8 +28,29 @@
 
 using namespace std;
 
+void error(JNIEnv *env, const char *msg) {
+    env->ExceptionClear();
+    jclass newExcCls = env->FindClass("java/lang/RuntimeException");
+    if (newExcCls == NULL) {
+        /* Unable to find the exception class, give up. */
+        assert(false);
+        return;
+    }
+    env->ThrowNew(newExcCls, msg);
+    env->DeleteLocalRef(newExcCls);
+}
+
 JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1open
   (JNIEnv *env, jobject obj, jlong options_ptr, jstring name) {
+
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return 0;
+    }
+    if (name == NULL) {
+        error(env, "LevelDB filename is NULL");
+        return 0;
+    }
 
     const char* utf_chars = env->GetStringUTFChars(name, NULL);
     assert(utf_chars);
@@ -44,16 +65,8 @@ JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1open
     env->ReleaseStringUTFChars(name, utf_chars);
 
     if (errptr != NULL) {
-        env->ExceptionClear();
-        jclass newExcCls = env->FindClass("java/lang/RuntimeException");
-        if (newExcCls == NULL) {
-            /* Unable to find the exception class, give up. */
-            assert(false);
-            return 0;
-        }
-        env->ThrowNew(newExcCls, errptr);
+        error(env, errptr);
         free(errptr);
-        env->DeleteLocalRef(newExcCls);
         return 0;
     }
 
@@ -63,12 +76,34 @@ JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1open
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1close
   (JNIEnv *env, jobject obj, jlong leveldb_ptr) {
 
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return;
+    }
+
     leveldb_close(
         reinterpret_cast<leveldb_t*>(leveldb_ptr));
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1put
   (JNIEnv *env, jobject obj, jlong leveldb_ptr, jlong writeoptions_ptr, jbyteArray key, jbyteArray value) {
+
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return;
+    }
+    if (writeoptions_ptr == 0) {
+        error(env, "LevelDB write options handle is NULL");
+        return;
+    }
+    if (key == 0) {
+        error(env, "LevelDB key is NULL");
+        return;
+    }
+    if (value == 0) {
+        error(env, "LevelDB value is NULL");
+        return;
+    }
 
     jsize key_length = env->GetArrayLength(key);
     const jbyte *key_bytes = env->GetByteArrayElements(key, NULL);
@@ -87,22 +122,27 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1put
         &errptr);
 
     if (errptr != NULL) {
-        env->ExceptionClear();
-        jclass newExcCls = env->FindClass("java/lang/RuntimeException");
-        if (newExcCls == NULL) {
-            /* Unable to find the exception class, give up. */
-            assert(false);
-            return;
-        }
-        env->ThrowNew(newExcCls, errptr);
+        error(env, errptr);
         free(errptr);
-        env->DeleteLocalRef(newExcCls);
         return;
     }
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1delete
   (JNIEnv *env, jobject obj, jlong leveldb_ptr, jlong writeoptions_ptr, jbyteArray key) {
+
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return;
+    }
+    if (writeoptions_ptr == 0) {
+        error(env, "LevelDB write options handle is NULL");
+        return;
+    }
+    if (key == 0) {
+        error(env, "LevelDB key is NULL");
+        return;
+    }
 
     jsize key_length = env->GetArrayLength(key);
     const jbyte *key_bytes = env->GetByteArrayElements(key, NULL);
@@ -117,22 +157,27 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1delete
         &errptr);
 
     if (errptr != NULL) {
-        env->ExceptionClear();
-        jclass newExcCls = env->FindClass("java/lang/RuntimeException");
-        if (newExcCls == NULL) {
-            /* Unable to find the exception class, give up. */
-            assert(false);
-            return;
-        }
-        env->ThrowNew(newExcCls, errptr);
+        error(env, errptr);
         free(errptr);
-        env->DeleteLocalRef(newExcCls);
         return;
     }
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1write
   (JNIEnv *env, jobject obj, jlong leveldb_ptr, jlong writeoptions_ptr, jlong writebatch_ptr) {
+
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return;
+    }
+    if (writeoptions_ptr == 0) {
+        error(env, "LevelDB write options handle is NULL");
+        return;
+    }
+    if (writebatch_ptr == 0) {
+        error(env, "LevelDB write batch handle is NULL");
+        return;
+    }
 
     char* errptr = NULL;
 
@@ -143,22 +188,27 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1write
         &errptr);
 
     if (errptr != NULL) {
-        env->ExceptionClear();
-        jclass newExcCls = env->FindClass("java/lang/RuntimeException");
-        if (newExcCls == NULL) {
-            /* Unable to find the exception class, give up. */
-            assert(false);
-            return;
-        }
-        env->ThrowNew(newExcCls, errptr);
+        error(env, errptr);
         free(errptr);
-        env->DeleteLocalRef(newExcCls);
         return;
     }
 }
 
 JNIEXPORT jbyteArray JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1get
   (JNIEnv *env, jobject obj, jlong leveldb_ptr, jlong readoptions_ptr, jbyteArray key) {
+
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return NULL;
+    }
+    if (readoptions_ptr == 0) {
+        error(env, "LevelDB read options handle is NULL");
+        return NULL;
+    }
+    if (key == 0) {
+        error(env, "LevelDB key is NULL");
+        return NULL;
+    }
 
     jsize key_length = env->GetArrayLength(key);
     const jbyte *key_bytes = env->GetByteArrayElements(key, NULL);
@@ -176,18 +226,8 @@ JNIEXPORT jbyteArray JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1ge
         &errptr);
 
     if (errptr != NULL) {
-        if (value) free(value);
-
-        env->ExceptionClear();
-        jclass newExcCls = env->FindClass("java/lang/RuntimeException");
-        if (newExcCls == NULL) {
-            /* Unable to find the exception class, give up. */
-            assert(false);
-            return NULL;
-        }
-        env->ThrowNew(newExcCls, errptr);
+        error(env, errptr);
         free(errptr);
-        env->DeleteLocalRef(newExcCls);
         return NULL;
     }
 
@@ -201,6 +241,15 @@ JNIEXPORT jbyteArray JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1ge
 JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1create_1iterator
   (JNIEnv *env, jobject obj, jlong leveldb_ptr, jlong readoptions_ptr) {
 
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return 0;
+    }
+    if (readoptions_ptr == 0) {
+        error(env, "LevelDB read options handle is NULL");
+        return 0;
+    }
+
     leveldb_iterator_t* retval = leveldb_create_iterator(
         reinterpret_cast<leveldb_t*>(leveldb_ptr),
         reinterpret_cast<leveldb_readoptions_t*>(readoptions_ptr));
@@ -210,6 +259,11 @@ JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1create_
 JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1create_1snapshot
   (JNIEnv *env, jobject obj, jlong leveldb_ptr) {
 
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return 0;
+    }
+
     const leveldb_snapshot_t* retval = leveldb_create_snapshot(
         reinterpret_cast<leveldb_t*>(leveldb_ptr));
     return reinterpret_cast<jlong>(retval);
@@ -218,6 +272,15 @@ JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1create_
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1release_1snapshot
   (JNIEnv *env, jobject obj, jlong leveldb_ptr, jlong snapshot_ptr) {
 
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return;
+    }
+    if (snapshot_ptr == 0) {
+        error(env, "LevelDB snapshot handle is NULL");
+        return;
+    }
+
     leveldb_release_snapshot(
         reinterpret_cast<leveldb_t*>(leveldb_ptr),
         reinterpret_cast<leveldb_snapshot_t*>(snapshot_ptr));
@@ -225,6 +288,15 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1release_
 
 JNIEXPORT jstring JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1property_1value
   (JNIEnv *env, jobject obj, jlong leveldb_ptr, jstring name) {
+
+    if (leveldb_ptr == 0) {
+        error(env, "LevelDB database handle is NULL");
+        return NULL;
+    }
+    if (name == 0) {
+        error(env, "LevelDB property name is NULL");
+        return NULL;
+    }
 
     const char* name_chars = env->GetStringUTFChars(name, NULL);
 
@@ -242,6 +314,15 @@ JNIEXPORT jstring JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1prope
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1destroy_1db
   (JNIEnv *env, jobject obj, jlong options_ptr, jstring name) {
 
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+    if (name == 0) {
+        error(env, "LevelDB filename is NULL");
+        return;
+    }
+
     const char* name_chars = env->GetStringUTFChars(name, NULL);
 
     char* errptr = NULL;
@@ -254,22 +335,23 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1destroy_
     env->ReleaseStringUTFChars(name, name_chars);
 
     if (errptr != NULL) {
-        env->ExceptionClear();
-        jclass newExcCls = env->FindClass("java/lang/RuntimeException");
-        if (newExcCls == NULL) {
-            /* Unable to find the exception class, give up. */
-            assert(false);
-            return;
-        }
-        env->ThrowNew(newExcCls, errptr);
+        error(env, errptr);
         free(errptr);
-        env->DeleteLocalRef(newExcCls);
         return;
     }
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1repair_1db
   (JNIEnv *env, jobject obj, jlong options_ptr, jstring name) {
+
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+    if (name == 0) {
+        error(env, "LevelDB filename is NULL");
+        return;
+    }
 
     const char* name_chars = env->GetStringUTFChars(name, NULL);
 
@@ -283,22 +365,19 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1repair_1
     env->ReleaseStringUTFChars(name, name_chars);
 
     if (errptr != NULL) {
-        env->ExceptionClear();
-        jclass newExcCls = env->FindClass("java/lang/RuntimeException");
-        if (newExcCls == NULL) {
-            /* Unable to find the exception class, give up. */
-            assert(false);
-            return;
-        }
-        env->ThrowNew(newExcCls, errptr);
+        error(env, errptr);
         free(errptr);
-        env->DeleteLocalRef(newExcCls);
         return;
     }
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1destroy
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
+
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return;
+    }
 
     leveldb_iter_destroy(
         reinterpret_cast<leveldb_iterator_t*>(iterator_ptr));
@@ -307,12 +386,22 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1de
 JNIEXPORT jboolean JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1valid
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
 
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return 0;
+    }
+
     return leveldb_iter_valid(
         reinterpret_cast<leveldb_iterator_t*>(iterator_ptr));
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1seek_1to_1first
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
+
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return;
+    }
 
     leveldb_iter_seek_to_first(
         reinterpret_cast<leveldb_iterator_t*>(iterator_ptr));
@@ -321,12 +410,26 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1se
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1seek_1to_1last
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
 
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return;
+    }
+
     leveldb_iter_seek_to_last(
         reinterpret_cast<leveldb_iterator_t*>(iterator_ptr));
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1seek
   (JNIEnv *env, jobject obj, jlong iterator_ptr, jbyteArray key) {
+
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return;
+    }
+    if (key == 0) {
+        error(env, "LevelDB key is NULL");
+        return;
+    }
 
     jsize key_length = env->GetArrayLength(key);
     const jbyte *key_bytes = env->GetByteArrayElements(key, NULL);
@@ -340,6 +443,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1se
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1next
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
 
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return;
+    }
+
     leveldb_iter_next(
         reinterpret_cast<leveldb_iterator_t*>(iterator_ptr));
 }
@@ -347,12 +455,22 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1ne
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1prev
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
 
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return;
+    }
+
     leveldb_iter_prev(
         reinterpret_cast<leveldb_iterator_t*>(iterator_ptr));
 }
 
 JNIEXPORT jbyteArray JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1key
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
+
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return NULL;
+    }
 
     size_t keylen = 0;
 
@@ -370,6 +488,11 @@ JNIEXPORT jbyteArray JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1it
 JNIEXPORT jbyteArray JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1value
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
 
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return NULL;
+    }
+
     size_t vallen = 0;
 
     const char* value = leveldb_iter_value(
@@ -385,6 +508,11 @@ JNIEXPORT jbyteArray JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1it
 
 JNIEXPORT jstring JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_1get_1error
   (JNIEnv *env, jobject obj, jlong iterator_ptr) {
+
+    if (iterator_ptr == 0) {
+        error(env, "LevelDB iterator handle is NULL");
+        return NULL;
+    }
 
     char *errptr = NULL;
 
@@ -403,13 +531,19 @@ JNIEXPORT jstring JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1iter_
 }
 
 JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writebatch_1create
-  (JNIEnv *env, jobject) {
+  (JNIEnv *env, jobject obj) {
 
-    leveldb_writebatch_t* leveldb_writebatch_create();
+    leveldb_writebatch_t* retval = leveldb_writebatch_create();
+    return reinterpret_cast<jlong>(retval);
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writebatch_1destroy
   (JNIEnv *env, jobject obj, jlong writebatch_ptr) {
+
+    if (writebatch_ptr == 0) {
+        error(env, "LevelDB write batch handle is NULL");
+        return;
+    }
 
     leveldb_writebatch_destroy(
         reinterpret_cast<leveldb_writebatch_t*>(writebatch_ptr));
@@ -418,12 +552,30 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writebat
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writebatch_1clear
   (JNIEnv *env, jobject obj, jlong writebatch_ptr) {
 
+    if (writebatch_ptr == 0) {
+        error(env, "LevelDB write batch handle is NULL");
+        return;
+    }
+
     leveldb_writebatch_clear(
         reinterpret_cast<leveldb_writebatch_t*>(writebatch_ptr));
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writebatch_1put
   (JNIEnv *env, jobject obj, jlong writebatch_ptr, jbyteArray key, jbyteArray value) {
+
+    if (writebatch_ptr == 0) {
+        error(env, "LevelDB write batch handle is NULL");
+        return;
+    }
+    if (key == 0) {
+        error(env, "LevelDB key is NULL");
+        return;
+    }
+    if (value == 0) {
+        error(env, "LevelDB value is NULL");
+        return;
+    }
 
     jsize key_length = env->GetArrayLength(key);
     const jbyte *key_bytes = env->GetByteArrayElements(key, NULL);
@@ -441,6 +593,15 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writebat
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writebatch_1delete
   (JNIEnv *env, jobject obj, jlong writebatch_ptr, jbyteArray key) {
 
+    if (writebatch_ptr == 0) {
+        error(env, "LevelDB write batch handle is NULL");
+        return;
+    }
+    if (key == 0) {
+        error(env, "LevelDB key is NULL");
+        return;
+    }
+
     jsize key_length = env->GetArrayLength(key);
     const jbyte *key_bytes = env->GetByteArrayElements(key, NULL);
 
@@ -451,7 +612,7 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writebat
 }
 
 JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1create
-  (JNIEnv *env, jobject) {
+  (JNIEnv *env, jobject obj) {
 
     leveldb_options_t* retval = leveldb_options_create();
     return reinterpret_cast<jlong>(retval);
@@ -460,12 +621,22 @@ JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1destroy
   (JNIEnv *env, jobject obj, jlong options_ptr) {
 
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+
     leveldb_options_destroy(
         reinterpret_cast<leveldb_options_t*>(options_ptr));
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1create_1if_1missing
   (JNIEnv *env, jobject obj, jlong options_ptr, jboolean value) {
+
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
 
     unsigned char native_bool = value ? 1 : 0;
 
@@ -477,6 +648,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1error_1if_1exists
   (JNIEnv *env, jobject obj, jlong options_ptr, jboolean value) {
 
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+
     unsigned char native_bool = value ? 1 : 0;
 
     leveldb_options_set_error_if_exists(
@@ -486,6 +662,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1paranoid_1checks
   (JNIEnv *env, jobject obj, jlong options_ptr, jboolean value) {
+
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
 
     unsigned char native_bool = value ? 1 : 0;
 
@@ -497,6 +678,15 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1env
   (JNIEnv *env, jobject obj, jlong options_ptr, jlong env_ptr) {
 
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+    if (env_ptr == 0) {
+        error(env, "LevelDB env handle is NULL");
+        return;
+    }
+
     leveldb_options_set_env(
         reinterpret_cast<leveldb_options_t*>(options_ptr),
         reinterpret_cast<leveldb_env_t*>(env_ptr));
@@ -505,6 +695,15 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1info_1log
   (JNIEnv *env, jobject obj, jlong options_ptr, jlong logger_ptr) {
 
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+    if (logger_ptr == 0) {
+        error(env, "LevelDB logger handle is NULL");
+        return;
+    }
+
     leveldb_options_set_info_log(
         reinterpret_cast<leveldb_options_t*>(options_ptr),
         reinterpret_cast<leveldb_logger_t*>(logger_ptr));
@@ -512,6 +711,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1write_1buffer_1size
   (JNIEnv *env, jobject obj, jlong options_ptr, jlong size) {
+
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
 
     assert(size > 0);
 
@@ -523,6 +727,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1max_1open_1files
   (JNIEnv *env, jobject obj, jlong options_ptr, jint value) {
 
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+
     leveldb_options_set_max_open_files(
         reinterpret_cast<leveldb_options_t*>(options_ptr),
         value);
@@ -531,6 +740,15 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1cache
   (JNIEnv *env, jobject obj, jlong options_ptr, jlong cache_ptr) {
 
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+    if (cache_ptr == 0) {
+        error(env, "LevelDB cache handle is NULL");
+        return;
+    }
+
     leveldb_options_set_cache(
         reinterpret_cast<leveldb_options_t*>(options_ptr),
         reinterpret_cast<leveldb_cache_t*>(cache_ptr));
@@ -538,6 +756,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1block_1size
   (JNIEnv *env, jobject obj, jlong options_ptr, jlong size) {
+
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
 
     assert(size > 0);
 
@@ -549,6 +772,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1block_1restart_1interval
   (JNIEnv *env, jobject obj, jlong options_ptr, jint value) {
 
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
+
     leveldb_options_set_block_restart_interval(
         reinterpret_cast<leveldb_options_t*>(options_ptr),
         value);
@@ -556,6 +784,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1options_1set_1compression
   (JNIEnv *env, jobject obj, jlong options_ptr, jint value) {
+
+    if (options_ptr == 0) {
+        error(env, "LevelDB options handle is NULL");
+        return;
+    }
 
     leveldb_options_set_compression(
         reinterpret_cast<leveldb_options_t*>(options_ptr),
@@ -572,12 +805,22 @@ JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1readopt
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1readoptions_1destroy
   (JNIEnv *env, jobject obj, jlong readoptions_ptr) {
 
+    if (readoptions_ptr == 0) {
+        error(env, "LevelDB read options handle is NULL");
+        return;
+    }
+
     leveldb_readoptions_destroy(
         reinterpret_cast<leveldb_readoptions_t*>(readoptions_ptr));
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1readoptions_1set_1verify_1checksums
   (JNIEnv *env, jobject obj, jlong readoptions_ptr, jboolean value) {
+
+    if (readoptions_ptr == 0) {
+        error(env, "LevelDB read options handle is NULL");
+        return;
+    }
 
     unsigned char native_bool = value ? 1 : 0;
 
@@ -589,6 +832,11 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1readopti
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1readoptions_1set_1fill_1cache
   (JNIEnv *env, jobject obj, jlong readoptions_ptr, jboolean value) {
 
+    if (readoptions_ptr == 0) {
+        error(env, "LevelDB read options handle is NULL");
+        return;
+    }
+
     unsigned char native_bool = value ? 1 : 0;
 
     leveldb_readoptions_set_fill_cache(
@@ -599,13 +847,18 @@ JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1readopti
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1readoptions_1set_1snapshot
   (JNIEnv *env, jobject obj, jlong readoptions_ptr, jlong snapshot_ptr) {
 
+    if (readoptions_ptr == 0) {
+        error(env, "LevelDB read options handle is NULL");
+        return;
+    }
+
     leveldb_readoptions_set_snapshot(
         reinterpret_cast<leveldb_readoptions_t*>(readoptions_ptr),
         reinterpret_cast<const leveldb_snapshot_t*>(snapshot_ptr));
 }
 
 JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writeoptions_1create
-  (JNIEnv *env, jobject) {
+  (JNIEnv *env, jobject obj) {
 
     leveldb_writeoptions_t* retval = leveldb_writeoptions_create();
     return reinterpret_cast<jlong>(retval);
@@ -614,12 +867,22 @@ JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writeop
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writeoptions_1destroy
   (JNIEnv *env, jobject obj, jlong writeoptions_ptr) {
 
+    if (writeoptions_ptr == 0) {
+        error(env, "LevelDB write options handle is NULL");
+        return;
+    }
+
     leveldb_writeoptions_destroy(
         reinterpret_cast<leveldb_writeoptions_t*>(writeoptions_ptr));
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1writeoptions_1set_1sync
   (JNIEnv *env, jobject obj, jlong writeoptions_ptr, jboolean value) {
+
+    if (writeoptions_ptr == 0) {
+        error(env, "LevelDB write options handle is NULL");
+        return;
+    }
 
     unsigned char native_bool = value ? 1 : 0;
 
@@ -638,20 +901,30 @@ JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1cache_1
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1cache_1destroy
   (JNIEnv *env, jobject obj, jlong cache_ptr) {
 
+    if (cache_ptr == 0) {
+        error(env, "LevelDB cache handle is NULL");
+        return;
+    }
+
     leveldb_cache_destroy(
         reinterpret_cast<leveldb_cache_t*>(cache_ptr));
 }
 
 JNIEXPORT jlong JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1create_1default_1env
-  (JNIEnv *env, jobject) {
+  (JNIEnv *env, jobject obj) {
 
     leveldb_env_t* retval = leveldb_create_default_env();
     return reinterpret_cast<jlong>(retval);
 }
 
 JNIEXPORT void JNICALL Java_org_voltdb_leveldb_NativeInterface_leveldb_1env_1destroy
-  (JNIEnv *env, jobject obj, jlong leveldb_ptr) {
+  (JNIEnv *env, jobject obj, jlong env_ptr) {
+
+    if (env_ptr == 0) {
+        error(env, "LevelDB env handle is NULL");
+        return;
+    }
 
     leveldb_env_destroy(
-        reinterpret_cast<leveldb_env_t*>(leveldb_ptr));
+        reinterpret_cast<leveldb_env_t*>(env_ptr));
 }

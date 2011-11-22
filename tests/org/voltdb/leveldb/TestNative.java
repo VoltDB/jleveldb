@@ -36,6 +36,12 @@ public class TestNative extends TestCase {
         long writeoptions = ni.leveldb_writeoptions_create();
         long readoptions = ni.leveldb_readoptions_create();
 
+        try {
+            ni.leveldb_open(options, null);
+            fail(); // basic null handling check
+        }
+        catch (RuntimeException e) {}
+
         long db = ni.leveldb_open(options, "testfile.leveldb");
         ni.leveldb_put(db, writeoptions, "key".getBytes(), "value".getBytes());
         byte[] value = ni.leveldb_get(db, readoptions, "key".getBytes());
