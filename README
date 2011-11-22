@@ -26,6 +26,9 @@ parameter, your process will likely crash.
 I plan to build a java layer on top of this that more closely mirrors the native LevelDB
 API when I get a chance.
 
+This code likely has some bugs yet, as the test coverage is thin. Reproducers and pull
+requests welcome.
+
 Here is some sample code:
 
 ===========
