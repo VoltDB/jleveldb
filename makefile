@@ -3,15 +3,16 @@ JARNAME = jleveldb.jar
 JNIBASENAME = libjleveldb
 ifeq ($(PLATFORM),Darwin)
 	JNILIBNAME = $(JNIBASENAME).jnilib
+	USER_OBJS := libleveldb-osx.a
 endif
 ifeq ($(PLATFORM),Linux)
 	JNILIBNAME = $(JNIBASENAME).so
+	USER_OBJS := libleveldb-linux.a
 endif
 
 .PHONEY: all clean test
 
 OBJS := NativeInterface.o
-USER_OBJS := libleveldb.a
 
 RM := rm -rf
 

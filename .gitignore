@@ -2,3 +2,7 @@
 /libleveldb.a
 /.classpath
 /.project
+/jleveldb.jar
+/libjleveldb.jnilib
+/org_voltdb_leveldb_NativeInterface.h
+*.o
